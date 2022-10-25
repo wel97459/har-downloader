@@ -59,106 +59,107 @@ module.exports.openHarFile = function(har_files) {
 };
 
 module.exports.processHar = function(har, output_dir) {
-  console.log(har.log.entries.length);
+	console.log(har.log.entries.length);
 
-  var domain;
+	var domain;
 
-  har.log.entries.forEach(function(entry) {
-  	var entryUrl = entry.request.url;
-  	var entryUrlParts = url.parse(entryUrl);
+	har.log.entries.forEach(function(entry) {
+		var entryUrl = entry.request.url;
+		var entryUrlParts = url.parse(entryUrl);
 
-  	//console.log(entryUrlParts);
+		//console.log(entryUrlParts);
 
-    //assume first request will have correct hostname.
-    if (!domain){
-      domain = entryUrlParts.hostname;
-    }
+		//assume first request will have correct hostname.
+		if (!domain){
+			domain = entryUrlParts.hostname;
+		}
 
-    //ignore some domains
-  	if (
-  		entryUrlParts.hostname === 'www.google-analytics.com' ||
-  		entryUrlParts.hostname === 'static.ak.facebook.com' ||
-  		entryUrlParts.hostname === 's-static.ak.facebook.com'){
-      return;
-    }
+		//ignore some domains
+		if (
+			entryUrlParts.hostname === 'www.google-analytics.com' ||
+			entryUrlParts.hostname === 'static.ak.facebook.com' ||
+			entryUrlParts.hostname === 's-static.ak.facebook.com'){
+			return;
+		}
 
 
-    var entryFilepath,
-        entryDirpath;
+		var entryFilepath,
+			entryDirpath;
 
-    //add domain to outside urls
-    if (entryUrlParts.hostname === domain){
-      entryFilepath = output_dir + entryUrlParts.pathname;
-    } else {
-      entryFilepath = output_dir + DS + entryUrlParts.hostname + entryUrlParts.pathname;
-    }
-    entryDirpath = entryFilepath.substr(0, entryFilepath.lastIndexOf('/'));
+		//add domain to outside urls
+		if (entryUrlParts.hostname === domain){
+			entryFilepath = output_dir + entryUrlParts.pathname;
+		} else {
+			entryFilepath = output_dir + DS + entryUrlParts.hostname + entryUrlParts.pathname;
+		}
+		entryDirpath = entryFilepath.substr(0, entryFilepath.lastIndexOf('/'));
 
-    // console.log(entryFilepath);
-    // console.log(entryDirpath);
-    // return;
+		// console.log(entryFilepath);
+		// console.log(entryDirpath);
+		// return;
 
-    try {
-      mkdirp.sync(entryDirpath);
-    } catch (e) {
-			console.log(e);
-      return;
-    }
+		try {
+			mkdirp.sync(entryDirpath);
+		} catch (e) {
+				console.log(e);
+			return;
+		}
 
 		if (entryUrlParts.pathname === '/'){
 			entryFilepath = output_dir + DS + 'index.html';
 		} else if (entryUrlParts.pathname.substr(entryUrlParts.pathname.length - 1) === '/') {
 			entryFilepath = output_dir + DS + 'index.html';
 		}
-    var data = new Stream();
 
+		var data = new Stream();
 		try {
-      console.log('Output directory:' + entryFilepath);
+			console.log('Output directory:' + entryFilepath);
 			//var file = fs.openSync(entryFilepath, 'w');
 			var request = null;
 			if (entryUrlParts.protocol === 'https:'){
+				process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 				request = https.get(entryUrl, function(response) {
-          var data = new Stream();
+					var data = new Stream();
 
-          console.log(entryUrl);
-          // console.log('statusCode:', response.statusCode);
-          // console.log('headers:', response.headers);
-          response.on('data', function(chunk) {
-            data.push(chunk);
-          });
+					console.log(entryUrl);
+					// console.log('statusCode:', response.statusCode);
+					// console.log('headers:', response.headers);
+					response.on('data', function(chunk) {
+						data.push(chunk);
+					});
 
-          request.on('close', function(){
-            console.log('writing to ' + entryFilepath);
-            try {
-              fs.writeFileSync(entryFilepath, data.read());
-            } catch (e) {
-        			console.log(e);
-        		}
-          });
+					request.on('close', function(){
+						console.log('writing to ' + entryFilepath);
+						try {
+							fs.writeFileSync(entryFilepath, data.read());
+						} catch (e) {
+							console.log(e);
+						}
+					});
 				});
 			} else {
 				request = http.get(entryUrl, function(response) {
-          var data = new Stream();
+					var data = new Stream();
 
-          console.log(entryUrl);
-          // console.log('statusCode:', response.statusCode);
-          // console.log('headers:', response.headers);
-          response.on('data', function(chunk) {
-            data.push(chunk);
-          });
+					console.log(entryUrl);
+					// console.log('statusCode:', response.statusCode);
+					// console.log('headers:', response.headers);
+					response.on('data', function(chunk) {
+						data.push(chunk);
+					});
 
-          request.on('close', function(){
-            console.log('writing to ' + entryFilepath);
-            try {
-              fs.writeFileSync(entryFilepath, data.read());
-            } catch (e) {
-        			console.log(e);
-        		}
-          });
+					request.on('close', function(){
+						console.log('writing to ' + entryFilepath);
+						try {
+							fs.writeFileSync(entryFilepath, data.read());
+						} catch (e) {
+							console.log(e);
+						}
+					});
 				});
 			}
 		} catch (e) {
 			console.log(e);
 		}
-  });
+	});
 };
